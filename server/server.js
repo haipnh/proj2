@@ -5,4 +5,4 @@ http.createServer(function (req, res) {
     res.end('Hello World!\nCE boys are handsome\n');
 }).listen(8000);
 
-console.log("Server is running");
+console.log("Server is running. Try to press ^A then ^D.");
