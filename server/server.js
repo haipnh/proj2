@@ -1,55 +1,42 @@
-var http = require('http');
-
-http.createServer(function (req, res) {
-    res.writeHead(200, {'Content-Type': 'text/plain'});
-    res.end('Hello World!\nCE boys are handsome\n');
-}).listen(8000);
-
-console.log("Server is running. Try to press ^A then ^D.");
-
-var express = require('express');
-var app = express();
+var app = require('express')();
 var http = require('http').Server(app);
 var ip = require('ip');
-var mysql = require('mysql');
-var url = require('url');
-
-app.use(express.static('public'));
-
-app.get('/index.html', function(req, res){
-  app.use(express.static(__dirname));
-  res.sendFile(__dirname + '/index.html');  
-});
-
-http.listen(80, function(){
-   console.log('Server starts at ' + ip.address() + ':80');
-});
-
-var temp, humi;
+var io = require('socket.io')(http);
+var fs = require('fs');
 
 app.get('/', function(req, res){
-    res.writeHead(200, {'Content-Type': 'text/plain'});    
-	// console.log(req.url);
-	var q = url.parse(req.url, true).query;	
-	var txt = "Temp : " + q.temp + q.degree + " Humi : " + q.humi;
-	console.log(txt);
-	res.write(txt);
-    res.end();
-	// var con = mysql.createConnection({
-		// host: "localhost",
-		// user: "root",
-		// password: "root",
-		// database: "mydb"		
-	// });
-	// con.connect(function(err) {
-		// if (err) throw err;
-		// process.stdout.write("Connected database ! Inserting...");
-		// temp = parseFloat(q.temp);
-		// humi = parseFloat(q.humi);
-		// var sql = "INSERT INTO datas (temp, humi) VALUES (" + temp + "," + humi + ")";
-		// con.query(sql, function (err, result) {
-			// if (err) throw err;
-			// console.log("Done ! 1 record inserted");
-		// }); 
-	// });
+   console.log("Request : " + req.toString());
+   fs.readFile('./sites' + req.url, function(err, data){
+      console.log('./sites' + req.url);
+      if (!err) {
+         var dotoffset = req.url.lastIndexOf('.');
+         console.log("Dot Offset " + dotoffset);
+         var mimetype = dotoffset == -1
+                        ? 'text/plain'
+                        : {
+                           '.html': 'text/html',
+                           '.ico' : 'image/x-icon',
+                           '.jpg' : 'image/jpeg',
+                           '.png' : 'image/png',
+                           '.gif' : 'image/gif',
+                           '.css' : 'text/css',
+                           '.js' : 'text/javascript'
+                        }[ req.url.substr(dotoffset) ];
+         res.setHeader('Content-type' , mimetype);
+         res.end(data);
+         console.log( requ.url, mimetype );
+      } else {
+         console.log ('File Not Found: ' + req.url);
+         res.writeHead(404, "Not Found");
+         res.end();
+      }
+   });
+});
+
+http.listen(8000, function(){
+   console.log("Server is running at " + ip.address() + ':8000. ' + "Try to press ^A then ^D.");
+});
+
+io.on('connection', function(socket){
+  console.log('A user connected');
 });
