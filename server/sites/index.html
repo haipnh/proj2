@@ -3,36 +3,37 @@
 <head>
 </head>
 <title> Controller </title> 
-<link rel="stylesheet" type="text/css" href="style.css">
+<link rel="stylesheet" type="text/css" href="/sites/style.css">
 <body>
 	<center>
 		<p>
 			<p align = "left" class = "ButtonLabel" > GPIO_1 </h1>
 			<label class="switch">
-			  <input type="checkbox" id="switch1">
+			  <input type="checkbox" id="sw1" onChange="valueChange(this)">
 			  <span class="slider round"></span>
 			</label><br><br>
 			
 			<p align = "left" class = "ButtonLabel" > GPIO_2 </h1>
 			<label class="switch">
-			  <input type="checkbox" id="switch2">
+			  <input type="checkbox" id="sw2" onChange="valueChange(this)">
 			  <span class="slider round"></span>
 			</label><br><br>
 			
 			<p align = "left" class = "ButtonLabel" > GPIO_3 </h1>
 			<label class="switch">
-			  <input type="checkbox" id="switch3">
+			  <input type="checkbox" id="sw3" onChange="valueChange(this)">
 			  <span class="slider round"></span>
 			</label><br><br>
 			
 			<p align = "left" class = "ButtonLabel" > GPIO_4 </h1>
 			<label class="switch">
-			  <input type="checkbox" id="switch4">
+			  <input type="checkbox" id="sw4" onChange="valueChange(this)">
 			  <span class="slider round"></span>			  
 			</label><br><br>
 		</p>
-	</center>
+	</center> 
 	<script src="/socket.io/socket.io.js"></script>
-	<script> var socket = io(); </script>
+	<script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+	<script src="/sites/index.js"></script>
 </body>	
 </html>

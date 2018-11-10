@@ -2,35 +2,28 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var ip = require('ip');
-var io = require('socket.io');
-var fs = require('fs');
+var io = require('socket.io')(http);
 
-app.get('/', function (req, res){
-   fs.readFile('./' + req.url, function(err, data) {
-        if (!err) {
-            var dotoffset = req.url.lastIndexOf('.');
-            var mimetype = dotoffset == -1
-                            ? 'text/plain'
-                            : {
-                                '.html' : 'text/html',
-                                '.ico' : 'image/x-icon',
-                                '.jpg' : 'image/jpeg',
-                                '.png' : 'image/png',
-                                '.gif' : 'image/gif',
-                                '.css' : 'text/css',
-                                '.js' : 'text/javascript'
-                                }[ req.url.substr(dotoffset) ];
-            res.setHeader('Content-type' , mimetype);
-            res.end(data);
-            console.log( req.url, mimetype );
-        } else {
-            console.log ('file not found: ' + req.url);
-            res.writeHead(404, "Not Found");
-            res.end();
-        }
-    });
+app.use(express.static('sites'));
+
+app.get('/', function(req, res){
+  app.use(express.static(__dirname));
+  res.sendFile(__dirname + '/sites/index.html');
 });
 
-http.listen(80, function(){
-   console.log('Server starts at ' + ip.address() + ':80');
+io.on("connection", function(socket){
+   console.log("A user connected");
+   socket.on("disconnect", function(){
+      console.log("User disconnected");
+   });
+   socket.on("cmd", function(msg){
+      console.log("cmd : " + JSON.stringify(msg));
+   });
+   socket.on("node", function(msg){      
+      console.log("node : " + JSON.stringify(msg));
+   });
+});
+
+http.listen(8000, function(){
+  console.log('Listening on port 8000');
 });
