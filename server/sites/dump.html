@@ -4,16 +4,34 @@
       <title>Socket.IO chat</title>
       <style>
          * { margin: 0; padding: 0; box-sizing: border-box; }
-         body { font: 13px Helvetica, Arial; }
+         body { font: 25px Helvetica, Arial; }
          form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
          form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
          form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+         p {     
+            border-style: solid;
+            border-width: 5px;
+            background : #ffcccc ; 
+            font-family: verdana; 
+            font-size: 20px;
+            padding: 20px 20px;
+            text-align: justify;
+         }
          #messages { list-style-type: none; margin: 0; padding: 0; }
-         #messages li { padding: 5px 10px; }
-         #messages li:nth-child(odd) { background: #eee; }
+         #messages li      { padding: 0px 10px; background: #1E90FF;}
+         #messages liecho  { padding: 0px 10px; background: #D3D3D3;}
       </style>
    </head>
    <body>
+      <p id="intro">
+         Hi ! </br>
+         This is a dump site for testing WebSocket protocol which is implemented by Socket.IO library. </br>
+         Type anything then <font color=blue>send it</font> and the server will <font color=white>echo back</font>. </br>
+         The server listens to "dump" and client listens to "dumpback". </br>
+         You can also check messages in the browser's console. </br>
+         Have fun ! </br>
+         haiphamnguyenhoang@gmail.com </br>
+      </p>
       <ul id="messages"></ul>
       <form action="">
          <input id="m" autocomplete="off" /><button>Send</button>
@@ -25,14 +43,20 @@
             var socket = io();
             $('form').submit(function(){
                if($('#m').val()){
-                  $('#messages').append($('#m').val());
+                  $('#messages').append($('<li>').text($('#m').val()));                  
                   socket.emit('dump', $('#m').val());
+                  console.log("Sent : " + $('#m').val());
                   $('#m').val('');
+                  return false;
+               }
+               else{
                   return false;
                }
             });
             socket.on('dumpback', function(msg){
-               $('#messages').append($('<li>').text(msg));
+               var str = msg.toString().replace("Echo : ","");
+               console.log(msg.toString());
+               $('#messages').append($('<liecho>').text(str));
             });
          });      
       </script>      
