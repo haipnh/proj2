@@ -1,7 +1,6 @@
 var express = require('express');
 var app = express();
 var http = require('http').Server(app);
-var ip = require('ip');
 var io = require('socket.io')(http);
 
 app.use(express.static('sites'));
@@ -9,6 +8,10 @@ app.use(express.static('sites'));
 app.get('/', function(req, res){
   app.use(express.static(__dirname));
   res.sendFile(__dirname + '/sites/index.html');
+});
+
+app.get('/dump', function(req, res){
+  res.sendFile(__dirname + '/sites/dump.html');
 });
 
 io.on("connection", function(socket){
@@ -22,8 +25,12 @@ io.on("connection", function(socket){
    socket.on("node", function(msg){      
       console.log("node : " + JSON.stringify(msg));
    });
+   socket.on("dump", function(msg){      
+      console.log("Rx : " + msg);
+	   io.emit("dumpback", "Echo : " + msg);
+   });
 });
 
 http.listen(8000, function(){
-  console.log('Listening on port 8000');
+   console.log('Listening on port 8000');
 });
