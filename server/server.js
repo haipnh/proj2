@@ -21,6 +21,7 @@ io.on("connection", function(socket){
    });
    socket.on("cmd", function(msg){
       console.log("cmd : " + JSON.stringify(msg));
+	  io.emit("cmd2node", msg);
    });
    socket.on("node", function(msg){      
       console.log("node : " + JSON.stringify(msg));
@@ -31,6 +32,6 @@ io.on("connection", function(socket){
    });
 });
 
-http.listen(8000, function(){
-   console.log('Listening on port 8000');
+http.listen(80, function(){
+   console.log('Listening on port 80');
 });
