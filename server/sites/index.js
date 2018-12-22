@@ -1,91 +1,162 @@
 var socket = io();
 
-function valueChange(item){
-	var obj = new Object();
-	obj.item = item.id;
-	obj.value = item.checked;
-	socket.emit('cmd',obj);
+function MakeJSON(index){
+   var output = document.getElementById("SliderVal"+index);
+   var obj = new Object(); 
+	obj.Thing = index;
+	obj.Value = output.innerHTML;	
+   return obj;
+}
+
+function SyncSlider(index){
+   var slider = document.getElementById("Slider"+index);
+   var checked = document.getElementById("Switch"+index).checked;
+   if(checked)   
+      slider.value = 100;
+   else 
+      slider.value = 0;
+}
+
+function SyncSwitch(index){
+   var sw = document.getElementById("Switch"+index);
+   var value = document.getElementById("Slider"+index).value;
+   if(value<50)   sw.checked = false;
+   if(value>=50)  sw.checked = true;      
+}
+
+function SyncOutput(index){
+   var slider =  document.getElementById("Slider"+index);
+   var output = document.getElementById("SliderVal"+index);
+   output.innerHTML = slider.value;   
+}
+
+function SliderOnInput(item){
+   var slider =  document.getElementById(item.id);
+   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
+   SyncOutput(index);
+}
+
+function SliderOnChange(item){
+   var slider =  document.getElementById(item.id);
+   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
+   SyncSwitch(index, slider.value);
+   var obj = MakeJSON(index);
+   socket.emit('cmd', obj);	
 	console.log("Sent : " + JSON.stringify(obj));
 }
-function httpGetAsync(theUrl, callback) { 
-	var xmlHttp = new XMLHttpRequest();
-	xmlHttp.onreadystatechange = function() {
-		if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
-			callback(JSON.parse(xmlHttp.responseText));
-	}
-	xmlHttp.open("GET", theUrl, true); // true for asynchronous
-	xmlHttp.send(null);
+
+function SwitchOnChange(item){
+   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
+   SyncSlider(index);
+   SyncOutput(index);
+   var obj = MakeJSON(index);
+   socket.emit('cmd', obj);	
+	console.log("Sent : " + JSON.stringify(obj));
 }
 
 window.onload = function() {
-	var dataTemp = [];
-	var dataHumd = [];
-	var Chart = new CanvasJS.Chart("ChartContainer", {
-		zoomEnabled: true, // Dùng thuộc tính có thể zoom vào graph
-		title: {
-			text: "Temprature & Humidity" // Viết tiêu đề cho graph
-		},
-		toolTip: { // Hiển thị cùng lúc 2 trường giá trị nhiệt độ, độ ẩm trên graph
-			shared: true
-		},
-		axisX: {
-			title: "chart updates every 2 secs" // Chú thích cho trục X
-		},
-		data: [{
-			// Khai báo các thuộc tính của dataTemp và dataHumd
-			type: "line", // Chọn kiểu dữ liệu đường
-			xValueType: "dateTime", // Cài đặt kiểu giá trị tại trục X là thuộc tính thời gian
-			showInLegend: true, // Hiển thị "temp" ở mục chú thích (legend items)
-			name: "temp",
-			dataPoints: dataTemp // Dữ liệu hiển thị sẽ lấy từ dataTemp
-			},
-			{
-			type: "line",
-			xValueType: "dateTime",
-			showInLegend: true,
-			name: "humd",
-			dataPoints: dataHumd
-		}],
-	});
-	var yHumdVal = 0; // Biến lưu giá trị độ ẩm (theo trục Y)
-	var yTempVal = 0; // Biến lưu giá trị nhiệt độ (theo trục Y)
-	var updateInterval = 2000; // Thời gian cập nhật dữ liệu 2000ms = 2s
-	var time = new Date(); // Lấy thời gian hiện tại
+   var i;
+   for(i=1;i<=4;i++){
+      SyncOutput(i);
+   }
+   
+   var canvas = document.getElementById("canvas");
+	
+   var data = {
+      labels: [],
+      datasets: [
+         {
+            label: "Temparature",
+            fontColor: "#fff",
+            fill: false,
+            lineTension: 0,
+            backgroundColor: "rgba(255,99,71,1)",
+            borderColor: "rgba(255,99,71,1)",
 
-	var updateChart = function() {
-		httpGetAsync('/get', function(data) {
-			// Gán giá trị từ localhost:8000/get vào textbox để hiển thị
-			document.getElementById("temp").value = data[0].temp;
-			document.getElementById("humd").value = data[0].humd;
+            pointBorderColor: "rgba(255,99,71,1)",
+            pointBackgroundColor: "#fff",
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: "rgba(255,99,71,1)",
+            pointHoverBorderColor: "rgba(255,255,255,1)",
+            pointHoverBorderWidth: 2,
+            pointRadius: 5,
+            pointHitRadius: 10,
+            data: [],
+         },
+         {
+            label: "Humidity",
+            fill: false,
+            lineTension: 0,
+            backgroundColor: "rgba(75,192,192,1)",
+            borderColor: "rgba(75,192,192,1)",
 
-			// Xuất ra màn hình console trên browser giá trị nhận được từ localhost:8000/get
-			console.log(data);
-			// Cập nhật thời gian và lấy giá trị nhiệt độ, độ ẩm từ server
-			time.setTime(time.getTime() + updateInterval);
-			yTempVal = parseInt(data[0].temp);
-			yHumdVal = parseInt(data[0].humd);
-			dataTemp.push({ // cập nhât dữ liệu mới từ server
-			x: time.getTime(),
-			y: yTempVal
-			});
-			dataHumd.push({
-			x: time.getTime(),
-			y: yHumdVal
-			});
-			Chart.render(); // chuyển đổi dữ liệu của của graph thành mô hình đồ họa
-		});
-	};
-	updateChart(); // Chạy lần đầu tiên
-	setInterval(function() { // Cập nhật lại giá trị graph sau thời gian updateInterval
-		updateChart()
-	}, updateInterval);
+            pointBorderColor: "rgba(75,192,192,1)",
+            pointBackgroundColor: "#fff",
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: "rgba(75,192,192,1)",
+            pointHoverBorderColor: "rgba(255,255,255,1)",
+            pointHoverBorderWidth: 2,
+            pointRadius: 5,
+            pointHitRadius: 5,
+            data: [],
+         }
+      ]
+   };
+
+   var option = {
+      legend: {
+            display: true,
+            labels: {
+                fontColor: '#000'
+            }
+        },      
+      showLines: true
+   };
+   
+   var myLineChart = Chart.Line(canvas,{
+      data:data,
+      options:option
+   });
+   
+   setInterval(function(){
+      addData();
+   }, 1000);
+   
+   function addData(){
+      if(myLineChart.data.datasets[0].data.length == 10){
+         myLineChart.data.datasets[0].data.shift();
+         
+      }
+      if(myLineChart.data.datasets[1].data.length == 10){
+         myLineChart.data.datasets[1].data.shift();
+      }
+      if(myLineChart.data.labels.length == 10){
+         myLineChart.data.labels.shift();
+      }
+      myLineChart.data.datasets[0].data.push(getRandomInt(28,32));
+      myLineChart.data.datasets[1].data.push(getRandomInt(60,70));
+      myLineChart.data.labels.push(new Date().toLocaleString());
+      myLineChart.update();
+   }
+   
 }
 
-var slider = document.getElementById("myRange");
-var output = document.getElementById("demo");
-output.innerHTML = slider.value; // Display the default slider value
-
-// Update the current slider value (each time you drag the slider handle)
-slider.oninput = function() {
-    output.innerHTML = this.value;
+function addData(chart, label, data) {
+    chart.data.labels.push(label);
+    chart.data.datasets.forEach((dataset) => {
+        dataset.data.push(data);
+    });
+    chart.update();
 }
+
+function getRandomInt(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+
+
+

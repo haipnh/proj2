@@ -1,59 +1,75 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<title> Controller </title> 
-	<meta charset="UTF-8" meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" type="text/css" href="sites/index.css">
-	
-</head>
+   <head>
+      <title> Controller </title> 
+      <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+      <link rel="stylesheet" type="text/css" href="sites/index.css">
+      
+   </head>
 
-<body>
-	<center>
-		<p align="left">
-        <div class="panel"> GPIO_1            
-            <!-- SLIDER -->
-            <input type="range" min="0" max="100" value="0" class="Slider" id="myRange">
-            <!-- SWITCH -->         
-            <label class="switch">
-               <input type="checkbox" id="sw1" onChange="valueChange(this)">
-               <span class="slider round"></span>
-            </label>		
-        </div>
-        <hr>
-        <div class="panel"> GPIO_2
-            <!-- SLIDER -->
-            <input type="range" min="0" max="100" value="0" class="Slider" id="myRange">
-            <!-- SWITCH --> 
-            <label class="switch">
-              <input type="checkbox" id="sw2" onChange="valueChange(this)">
-              <span class="slider round"></span>
-            </label>
-		</div>
-        <hr>
-        <div class="panel"> GPIO_3
-            <!-- SLIDER -->
-            <input type="range" min="0" max="100" value="0" class="Slider" id="myRange">
-            <!-- SWITCH -->
-            <label class="switch">
-              <input type="checkbox" id="sw3" onChange="valueChange(this)">
-              <span class="slider round"></span>
-            </label>
-		</div>
-        <hr> 
-		<div class="panel"> GPIO_4
-            <!-- SLIDER -->
-            <input type="range" min="0" max="100" value="0" class="Slider" id="myRange">
-            <!-- SWITCH -->
-            <label class="switch">
-              <input type="checkbox" id="sw4" onChange="valueChange(this)">
-              <span class="slider round"></span>			  
-            </label>
-        </div>
-		
-		</p>
-	</center> 
-	<script src="/socket.io/socket.io.js"></script>
-	<script type="text/javascript" src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
-	<script src="sites/index.js"></script>
-</body>	
+   <body>	
+      <div class="Panel">
+         <span class="Label"> Thing1 </span>            
+
+         <div class="SliderContainer"> 
+            <input class="Slider" id="Slider1" type="range" min="0" max="100" value="0" onChange="SliderOnChange(this)" oninput="SliderOnInput(this)">
+            <span class="SliderVal" id="SliderVal1"></span>
+         </div>
+     
+         <label class="Switch" > 	 
+            <input type="checkbox" id="Switch1" onChange="SwitchOnChange(this)">
+            <span class="slider round"> </span>
+         </label>
+      </div> 
+
+      <div class="Panel">
+         <span class="Label"> Thing2 </span>            
+
+         <div class="SliderContainer"> 
+            <input class="Slider" id="Slider2" type="range" min="0" max="100" value="0" onChange="SliderOnChange(this)" oninput="SliderOnInput(this)">
+            <span class="SliderVal" id="SliderVal2"></span>
+         </div>
+     
+         <label class="Switch" > 	 
+            <input type="checkbox" id="Switch2" onChange="SwitchOnChange(this)">
+            <span class="slider round"> </span>
+         </label>
+      </div> 
+      
+      <div class="Panel">
+         <span class="Label"> Thing3 </span>            
+
+         <div class="SliderContainer"> 
+            <input class="Slider" id="Slider3" type="range" min="0" max="100" value="0" onChange="SliderOnChange(this)" oninput="SliderOnInput(this)">
+            <span class="SliderVal" id="SliderVal3"></span>
+         </div>
+     
+         <label class="Switch" > 	 
+            <input type="checkbox" id="Switch3" onChange="SwitchOnChange(this)">
+            <span class="slider round"> </span>
+         </label>
+      </div> 
+      
+      <div class="Panel">
+         <span class="Label"> Thing4 </span>            
+
+         <div class="SliderContainer"> 
+            <input class="Slider" id="Slider4" type="range" min="0" max="100" value="0" onChange="SliderOnChange(this)" oninput="SliderOnInput(this)">
+            <span class="SliderVal" id="SliderVal4"></span>
+         </div>
+     
+         <label class="Switch" > 	 
+            <input type="checkbox" id="Switch4" onChange="SwitchOnChange(this)">
+            <span class="slider round"> </span>
+         </label>
+      </div> 
+      
+      <div class="Monitor">
+         <canvas class="Canvas" id="canvas" responsive="true"> </canvas>      
+      </div>
+      
+      <script src="/socket.io/socket.io.js"></script>
+      <script type="text/javascript" src="sites/Chart.min.js"></script>
+      <script type="text/javascript" src="sites/index.js"></script>
+   </body>	
 </html>
