@@ -94,33 +94,31 @@ function nodeHandler(jsonData){
    }   
    if(jsonData.Type.localeCompare("Data")==0){
       if(typeof jsonData.DateTime == "undefined")
-            jsonData.DateTime = new Date();
-      //if(myUtils.calcElapsedSeconds(new Date(Data[Data.length-1].DateTime), jsonData.DateTime)>=dataCycleInSecond){
-      if((new Date(Data[Data.length-1].DateTime)!=null){
-                  
-         if(myUtils.calcElapsedMinutes(new Date(Data[Data.length-1].DateTime), jsonData.DateTime)>=dataCycleInMinute){   
-            delete jsonData.Type;  
-            myUtils.pushData2Array(jsonData, Data, dataLength, function(){
-               var newData = Data[Data.length-1];
-               newData.DateTime = new Date(newData.DateTime);
-               io.emit("ser2web", {"Type":"New", "Payload": newData});
-               console.log("ser2web : "+ JSON.stringify(newData));
-               jsonData.DateTime = myUtils.convertToSqlDateTime(jsonData.DateTime);     
-               mySqlHelper.insertData(jsonData);
-         });         
-         
-         }else console.log("Ignored data due to not reaching time limit"); 
-      }else{
+         jsonData.DateTime = new Date();
+      var lastest;
+      var dataLen = Data.length;
+      if(dataLen>1) lastest = Data[dataLen-1];
+      if(lastest==null){                    
          delete jsonData.Type;  
          myUtils.pushData2Array(jsonData, Data, dataLength, function(){
-            var newData = jsonData;
+            var newData = Data[Data.length-1];
             newData.DateTime = new Date(newData.DateTime);
             io.emit("ser2web", {"Type":"New", "Payload": newData});
             console.log("ser2web : "+ JSON.stringify(newData));
             jsonData.DateTime = myUtils.convertToSqlDateTime(jsonData.DateTime);     
             mySqlHelper.insertData(jsonData);
-         });         
-      }
+         });
+      }else if(myUtils.calcElapsedMinutes((new Date(lastest.DateTime)), jsonData.DateTime)>=dataCycleInMinute){
+         delete jsonData.Type;  
+         myUtils.pushData2Array(jsonData, Data, dataLength, function(){
+            var newData = Data[Data.length-1];
+            newData.DateTime = new Date(newData.DateTime);
+            io.emit("ser2web", {"Type":"New", "Payload": newData});
+            console.log("ser2web : "+ JSON.stringify(newData));
+            jsonData.DateTime = myUtils.convertToSqlDateTime(jsonData.DateTime);     
+            mySqlHelper.insertData(jsonData);
+         });
+      }else console.log("Ignored data due to not reaching time limit");        
    }
 }
 
