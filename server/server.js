@@ -14,7 +14,7 @@ const dataLength = 24;
 const numberOfThings = 4;
 
 var dataCycleInSecond = 10;
-var dataCycleInMinute = 60;
+var dataCycleInMinute = 10;
 
 var States = []; 
 var Data = []; 
@@ -95,17 +95,32 @@ function nodeHandler(jsonData){
    if(jsonData.Type.localeCompare("Data")==0){
       if(typeof jsonData.DateTime == "undefined")
             jsonData.DateTime = new Date();
-      if(myUtils.calcElapsedSeconds(new Date(Data[Data.length-1].DateTime), jsonData.DateTime)>=dataCycleInSecond){   
+      //if(myUtils.calcElapsedSeconds(new Date(Data[Data.length-1].DateTime), jsonData.DateTime)>=dataCycleInSecond){
+      if((new Date(Data[Data.length-1].DateTime)!=null){
+                  
+         if(myUtils.calcElapsedMinutes(new Date(Data[Data.length-1].DateTime), jsonData.DateTime)>=dataCycleInMinute){   
+            delete jsonData.Type;  
+            myUtils.pushData2Array(jsonData, Data, dataLength, function(){
+               var newData = Data[Data.length-1];
+               newData.DateTime = new Date(newData.DateTime);
+               io.emit("ser2web", {"Type":"New", "Payload": newData});
+               console.log("ser2web : "+ JSON.stringify(newData));
+               jsonData.DateTime = myUtils.convertToSqlDateTime(jsonData.DateTime);     
+               mySqlHelper.insertData(jsonData);
+         });         
+         
+         }else console.log("Ignored data due to not reaching time limit"); 
+      }else{
          delete jsonData.Type;  
          myUtils.pushData2Array(jsonData, Data, dataLength, function(){
-            var newData = Data[Data.length-1];
+            var newData = jsonData;
             newData.DateTime = new Date(newData.DateTime);
             io.emit("ser2web", {"Type":"New", "Payload": newData});
             console.log("ser2web : "+ JSON.stringify(newData));
             jsonData.DateTime = myUtils.convertToSqlDateTime(jsonData.DateTime);     
             mySqlHelper.insertData(jsonData);
          });         
-      }else console.log("Ignored data due to not reaching time limit"); 
+      }
    }
 }
 

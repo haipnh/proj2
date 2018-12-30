@@ -17,8 +17,9 @@ DHT dht(DHTPIN, DHTTYPE);
 int8_t thing=-1;
 
 SocketIOClient client;
-//char host[] = "34.219.71.32";  // AWS EC2 Instance's IP Address
-char host[] = "192.168.1.11";
+//char host[] = "34.219.71.32";  // AWS EC2 Instance's Public IP Address
+char host[] = "52.38.245.177";  // AWS EC2 Instance's Elastic IP Address
+//char host[] = "192.168.1.11";
 int port = 80;                 // Cổng dịch vụ socket server do chúng ta tạo!
 
 extern String RID;
@@ -36,7 +37,7 @@ void dataTask(uint32_t currentMillis);
 
 // Variables for pseudoDataTask
 uint32_t pseudoDataPreviousMillis = 0;
-uint32_t pseudoDataInterval = 1000;
+uint32_t pseudoDataInterval = 10000;
 void pseudoDataTask(uint32_t currentMillis);
 
 // Variables for thingTask
