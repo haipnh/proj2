@@ -1,39 +1,65 @@
 #include <ESP8266WiFi.h>
 #include <SocketIOClient.h>
 #include <ArduinoJson.h>
-//WIFI
-#define ssid "E7250"
+
+#include "DHT.h"
+#define DHTPIN  D7
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+#include "utils.h"
+
+#define DEBUG 1
+
+#define ssid "HatoLabs"
 #define password "helloworld"
 
-//socket.io
-SocketIOClient client;
-char host[] = "34.219.71.32";  // Địa chỉ IP dịch vụ, hãy thay đổi nó theo địa chỉ IP Socket server của bạn.
-int port = 80;                // Cổng dịch vụ socket server do chúng ta tạo!
+int8_t thing=-1;
 
-//từ khóa extern: dùng để #include các biến toàn cục ở một số thư viện khác. Trong thư viện SocketIOClient có hai biến toàn cục
-// mà chúng ta cần quan tâm đó là
-// RID: Tên hàm (tên sự kiện
-// Rfull: Danh sách biến (được đóng gói lại là chuối JSON)
+SocketIOClient client;
+//char host[] = "34.219.71.32";  // AWS EC2 Instance's IP Address
+char host[] = "192.168.1.11";
+int port = 80;                 // Cổng dịch vụ socket server do chúng ta tạo!
+
 extern String RID;
 extern String Rfull;
 
-//Một số biến dùng cho việc tạo một task
-unsigned long previousMillis = 0;
-long interval = 2000;
+// Variables for ledTask
+uint32_t ledPreviousMillis = 0;
+uint8_t ledInterval = 10, ledDuty=0, ledDirection=0;
+void ledTask(uint32_t currentMillis);
 
-String generateUID() {
-  String UID = "{\"MacAddress\":\"" + WiFi.macAddress() + "\",\"LocalIP\":\"" + WiFi.localIP().toString() + "\"}";
-  return UID;
+// Variables for dataTask
+uint32_t dataPreviousMillis = 0;
+uint32_t dataInterval = 5000;
+void dataTask(uint32_t currentMillis);
+
+// Variables for pseudoDataTask
+uint32_t pseudoDataPreviousMillis = 0;
+uint32_t pseudoDataInterval = 1000;
+void pseudoDataTask(uint32_t currentMillis);
+
+// Variables for thingTask
+uint32_t thingPreviousMillis = 0;
+uint32_t thingInterval = 1;
+void thingTask(uint32_t currentMillis);
+
+void setupGPIO(){
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(D1, OUTPUT);  
+  pinMode(D2, OUTPUT);  
+  pinMode(D5, OUTPUT);  
+  pinMode(D6, OUTPUT);  
 }
 
-void setup_wifi() {
+void setupWifi() {
   delay(10);
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(250);
     Serial.print(".");
   }
   Serial.println("");
@@ -42,78 +68,174 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 }
 
-void setup_client() {
+void setupClient() {
   if (!client.connect(host, port)) {
     Serial.println(F("Ket noi den socket server that bai!"));
     return;
   }
-  //Khi đã kết nối thành công
   if (client.connected()) {
-    //Thì gửi sự kiện ("connection") đến Socket server ahihi.
-    // client.send("connection", "message", "Connected !!!!");
-    client.sendJSON("connection", generateUID());
+    client.sendJSON("node2ser", generateUID(String(WiFi.macAddress())));
+    uint8_t h = SensorData.Humi, t = SensorData.Temp;
+    if(!((isnan(h) || isnan(t)) || (h == 0 && t == 0) || (h == 255 && t == 255))){
+      client.sendJSON("node2ser", makeJsonData(t, h));
+    }
   }
 }
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
-  //connect WIFI
-  setup_wifi();
-  //Serial.print("Server IP : ");
-  //while(!Serial.available());
-  //String temp = Serial.readString();
-  //temp.toCharArray(host,temp.length()-1);
-  //Serial.println(host);
-  setup_client();
-  Serial.println("Setup done");
-  pinMode(LED_BUILTIN, OUTPUT);
+  // Connect WIFI
+  setupWifi();
+  setupClient();
+  setupGPIO();
+  mapPins();
+  randomSeed(A0);
+//Serial.println("D1=" + String(D1) + "=" + String(Things[0].Pin)); 
+//Serial.println("D2=" + String(D2) + "=" + String(Things[1].Pin)); 
+//Serial.println("D5=" + String(D5) + "=" + String(Things[2].Pin)); 
+//Serial.println("D6=" + String(D6) + "=" + String(Things[3].Pin)); 
+//Serial.println("Setup done. Now wait 2 seconds for DHT11.");
+//delay(2000);  
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  //tạo một task cứ sau "interval" giây thì chạy lệnh:
-  //if (millis() - previousMillis > interval) {
-  //lệnh:
-  //previousMillis = millis();
-  //gửi sự kiện "atime" là một JSON chứa tham số message có nội dung là Time please?
-  // client.send("atime", "message", "Time please?");
-  // client.send("broadcast", "message", "Time please?");
-  // client.send("chat", "message", "Hello world");
-  //}
-  //Khi bắt được bất kỳ sự kiện nào thì chúng ta có hai tham số:
-  //  +RID: Tên sự kiện
-  //  +RFull: Danh sách tham số được nén thành chuỗi JSON!
-  if (client.monitor()) {
-    Serial.println(RID);
-    Serial.println(Rfull);
-    StaticJsonBuffer<200> jsonBuffer;
-    JsonObject& root = jsonBuffer.parseObject(Rfull);
-    //if(RID=="cmd2node"){
-
-    // uint8_t ledState = root["led"];
-    //digitalWrite(LED_BUILTIN, ledState);
-    //}
-    //else if(RID=="chat"){
-    //Serial.print("Server : ");
-    //String temp = root["message"];
-    //Serial.println(temp);
-    //}
-  }
-
-  //Kết nối lại!
   if (!client.connected()) {
     client.reconnect(host, port);
   }
-  // Chat App
+  
+  uint32_t currentMillis = millis();
+  
+  ledTask(currentMillis);
+  //dataTask(currentMillis);
+  pseudoDataTask(currentMillis);
+   
+  thingTask(currentMillis);
+  
+  if (client.monitor()) {
+    StaticJsonBuffer<300> jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(Rfull);
+//    if(DEBUG){
+//      Serial.println("RID : " + RID);
+//      Serial.println("Rfull : " + Rfull);
+//    }
+    if(RID.equals("ser2node")){
+       const char* type = root["type"];
+//       if(DEBUG) Serial.println("Type : " + String(type));
+       if(strcmp(type, "cmd")==0){
+          thing = root["thing"];
+          if(DEBUG) Serial.println("thing : " + thing);
+          if(isnan(thing)) thing=-1;
+          else
+          {
+            Things[thing].State = root["state"];
+            Things[thing].AutoMode = root["automode"];
+            Things[thing].AutoBy = root["autoby"];
+            Things[thing].IfGreaterThan = root["ifgreaterthan"];
+            Things[thing].Threshold = root["threshold"]; 
+          } 
+       }       
+    }
+  }  
+}
 
-  if (Serial.available()) {
-    //String temp = Serial.readString();
-
-    //client.send("chat", "message", temp);
-    //Serial.println(temp);
-    //Serial.flush();
-    client.send("node", "message", "Hello world");
-    delay(1000);
+void ledTask(uint32_t currentMillis){
+  uint32_t elapsedTime = currentMillis - ledPreviousMillis;
+  if(elapsedTime > ledInterval) {
+    ledPreviousMillis = currentMillis;   
+    if(!ledDirection)  ledDuty++; else ledDuty--;
+    if(ledDuty==0 || ledDuty==100) ledDirection=!ledDirection;
+    analogWrite(LED_BUILTIN, analogValueOfPwmDuty(ledDuty)); 
   }
+}
+
+void dataTask(uint32_t currentMillis){
+  uint32_t elapsedTime = currentMillis - dataPreviousMillis;
+  if(elapsedTime > dataInterval) {
+    dataPreviousMillis = currentMillis;   
+    uint8_t t = dht.readTemperature();
+    uint8_t h = dht.readHumidity();    
+    if ((isnan(h) || isnan(t)) || (h == 0 && t == 0) || (h == 255 && t == 255)) {
+      if(DEBUG){
+        Serial.print("Failed to read from DHT sensor! Temp : "); Serial.print(String(t));
+        Serial.println("   Humi : " + String(h));
+      }
+    }else
+    { 
+      SensorData.Temp = t;
+      SensorData.Humi = h;
+      if(client.connected()){
+        client.sendJSON("node2ser", makeJsonData(t, h));
+        if(DEBUG) Serial.println("Sent : " + String(t) + "#" +String(h));
+      }
+    }      
+  }
+}
+
+void pseudoDataTask(uint32_t currentMillis){
+  uint32_t elapsedTime = currentMillis - pseudoDataPreviousMillis;
+  if(elapsedTime > pseudoDataInterval) {
+    pseudoDataPreviousMillis = currentMillis;
+    uint8_t t = random(29,31);
+    uint8_t h = random(78,82);
+    SensorData.Temp = t;
+    SensorData.Humi = h;
+    if(client.connected()){
+      client.sendJSON("node2ser", makeJsonData(t, h));
+      if(DEBUG) Serial.println("Sent : " + String(t) + "#" +String(h));
+    }
+  }
+}
+
+void thingTask(uint32_t currentMillis){
+   uint32_t elapsedTime = currentMillis - thingPreviousMillis;
+   if(elapsedTime > thingInterval) {
+      thingPreviousMillis = currentMillis;
+      //if((thing!=-1)&&(Things[thing].AutoMode==0)){     
+       if(thing!=-1){
+         controlThing(thing);
+         thing=-1;
+      }
+    
+      for(uint8_t i = 0; i<4; i++){
+         if(Things[i].AutoMode==1 && Things[i].AutoBy==0){
+            if(Things[i].IfGreaterThan==0){
+               if(SensorData.Temp < Things[i].Threshold){
+                  Things[i].State=1;
+                  controlThing(i);      
+               }
+               else{
+                  Things[i].State=0;
+                  controlThing(i);
+               }
+            }else{
+               if(SensorData.Temp > Things[i].Threshold){
+                  Things[i].State=1;
+                  controlThing(i);      
+               }
+               else{
+                  Things[i].State=0;
+                  controlThing(i);
+               }
+            }
+         } else if (Things[i].AutoMode==1 && Things[i].AutoBy==1){
+            if(Things[i].IfGreaterThan==0){
+               if(SensorData.Humi < Things[i].Threshold){
+                  Things[i].State=1;
+                  controlThing(i);      
+               } else{
+                  Things[i].State=0;
+                  controlThing(i);
+               }
+            }else{
+               if(SensorData.Humi > Things[i].Threshold){
+                  Things[i].State=1;
+                  controlThing(i);      
+               }else{
+                  Things[i].State=0;
+                  controlThing(i);
+               }
+            }
+         }       
+      }
+   }
 }

@@ -1,108 +1,161 @@
 var socket = io();
+/* Variables */
+var numberofThings = 4;
+var States = [];
+var dataLength = 24;
+var newData, Data = [];
+var canvas = document.getElementById("canvas");
+var myLineChart;
+var datasets = [
+   {
+      label: "Temparature",
+      fontColor: "#fff",
+      fill: false,
+      lineTension: 0,
+      backgroundColor: "rgba(255,99,71,1)",
+      borderColor: "rgba(255,99,71,1)",
 
-function MakeJSON(index){
-   var output = document.getElementById("SliderVal"+index);
-   var obj = new Object(); 
-	obj.Thing = index;
-	obj.Value = output.innerHTML;	
-   return obj;
+      pointBorderColor: "rgba(255,99,71,1)",
+      pointBackgroundColor: "#fff",
+      pointBorderWidth: 1,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "rgba(255,99,71,1)",
+      pointHoverBorderColor: "rgba(255,255,255,1)",
+      pointHoverBorderWidth: 2,
+      pointRadius: 5,
+      pointHitRadius: 10,
+      data: [],
+   },
+   {
+      label: "Humidity",
+      fill: false,
+      lineTension: 0,
+      backgroundColor: "rgba(75,192,192,1)",
+      borderColor: "rgba(75,192,192,1)",
+
+      pointBorderColor: "rgba(75,192,192,1)",
+      pointBackgroundColor: "#fff",
+      pointBorderWidth: 1,
+      pointHoverRadius: 5,
+      pointHoverBackgroundColor: "rgba(75,192,192,1)",
+      pointHoverBorderColor: "rgba(255,255,255,1)",
+      pointHoverBorderWidth: 2,
+      pointRadius: 5,
+      pointHitRadius: 5,
+      data: [],
+   }
+]
+
+/* Windows on load event*/
+window.onload = function() {
+   socket.emit("web2ser", {"Type":"Greeting"});   
+   
+   for(var i=0; i<numberofThings; i++){
+      syncSliderValue(i);
+      enableAutoPanel(i);
+   }
+   
+   initChart();   
+}
+/* Event-Driven Functions */
+socket.on("ser2web", function(msg){
+   console.log(msg.Payload);
+   if(msg.Type.localeCompare("State")==0){      
+      States = msg.Payload;
+      convertAllStateDateTime();
+      console.log("States : " + JSON.stringify(States));
+      syncPanels();          
+   }
+   if(msg.Type.localeCompare("Data")==0){
+      Data = msg.Payload;
+      convertAllDataDateTime();   
+      syncChart();
+   }
+   if(msg.Type.localeCompare("New")==0){
+      newData = msg.Payload;
+      convertDataDateTime(newData);
+      pushData2Array(newData, Data);
+      pushData2Chart(newData, myLineChart);
+   }   
+});
+
+function StateSwitchOnChange(item){
+   sendCmd(item);
 }
 
-function SyncSlider(index){
-   var slider = document.getElementById("Slider"+index);
-   var checked = document.getElementById("Switch"+index).checked;
-   if(checked)   
-      slider.value = 100;
-   else 
-      slider.value = 0;
+function AutoModeSwitchOnChange(item){
+   sendCmd(item);
+   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
+   enableAutoPanel(index);
 }
 
-function SyncSwitch(index){
-   var sw = document.getElementById("Switch"+index);
-   var value = document.getElementById("Slider"+index).value;
-   if(value<50)   sw.checked = false;
-   if(value>=50)  sw.checked = true;      
+function AutoByOnChange(item){
+   sendCmd(item);  
 }
 
-function SyncOutput(index){
-   var slider =  document.getElementById("Slider"+index);
-   var output = document.getElementById("SliderVal"+index);
-   output.innerHTML = slider.value;   
+function IfGreaterThanOnChange(item){
+   sendCmd(item);
 }
 
 function SliderOnInput(item){
-   var slider =  document.getElementById(item.id);
-   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
-   SyncOutput(index);
+   var index = item.id.replace( /^\D+/g, '');
+   document.getElementById("SliderVal"+index).innerHTML = document.getElementById(item.id).value;
 }
 
-function SliderOnChange(item){
-   var slider =  document.getElementById(item.id);
-   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
-   SyncSwitch(index, slider.value);
-   var obj = MakeJSON(index);
-   socket.emit('cmd', obj);	
-	console.log("Sent : " + JSON.stringify(obj));
+function SliderOnChange(item){   
+   sendCmd(item);   
+   SliderOnInput(item);
 }
 
-function SwitchOnChange(item){
-   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
-   SyncSlider(index);
-   SyncOutput(index);
-   var obj = MakeJSON(index);
-   socket.emit('cmd', obj);	
-	console.log("Sent : " + JSON.stringify(obj));
-}
+/* Some useful functions */
 
-window.onload = function() {
-   var i;
-   for(i=1;i<=4;i++){
-      SyncOutput(i);
-   }
+function makeCmd(index){
+   var stateSwitch = document.getElementById("StateSwitch"+index).checked;
+   var autoModeSwitch = document.getElementById("AutoModeSwitch"+index).checked;       
+   var autoBy = document.getElementById("AutoBy"+index).selectedIndex;
+   var ifGreaterThan = document.getElementById("IfGreaterThan"+index).selectedIndex;
+   var threshold = document.getElementById("Slider"+index).value;
+     
+   var obj = new Object(); 
+   obj.Type = "Command";
+   obj.Thing = parseInt(index, 10);
+   obj.State = stateSwitch ? 1 : 0;
+   obj.AutoMode = autoModeSwitch ? 1 : 0;      
+   obj.AutoBy = parseInt(autoBy, 10);
+   obj.IfGreaterThan = parseInt(ifGreaterThan, 10);
+   obj.Threshold = parseInt(threshold, 10);  
+
+   console.log(obj);
    
-   var canvas = document.getElementById("canvas");
-	
+   return obj;
+}
+
+function sendCmd(item){
+   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string 
+   var cmd = makeCmd(index);
+   socket.emit("web2ser", cmd);
+   console.log("Sent : " + JSON.stringify(cmd));
+}
+
+function syncSliderValue(index){
+   var sliderVal =  document.getElementById("Slider"+index).value;
+   document.getElementById("SliderVal"+index).innerHTML = sliderVal;
+}
+
+function enableAutoPanel(index){
+   var enable = document.getElementById("AutoModeSwitch"+index).checked;
+   var state = document.getElementById("StateSwitch"+index);
+   var combobox1 = document.getElementById("AutoBy"+index);
+   var combobox2 = document.getElementById("IfGreaterThan"+index);
+   var slider = document.getElementById("Slider"+index);
+   state.disabled = enable;
+   combobox1.disabled = combobox2.disabled = slider.disabled = !enable;
+}
+
+function initChart(){
    var data = {
       labels: [],
-      datasets: [
-         {
-            label: "Temparature",
-            fontColor: "#fff",
-            fill: false,
-            lineTension: 0,
-            backgroundColor: "rgba(255,99,71,1)",
-            borderColor: "rgba(255,99,71,1)",
-
-            pointBorderColor: "rgba(255,99,71,1)",
-            pointBackgroundColor: "#fff",
-            pointBorderWidth: 1,
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: "rgba(255,99,71,1)",
-            pointHoverBorderColor: "rgba(255,255,255,1)",
-            pointHoverBorderWidth: 2,
-            pointRadius: 5,
-            pointHitRadius: 10,
-            data: [],
-         },
-         {
-            label: "Humidity",
-            fill: false,
-            lineTension: 0,
-            backgroundColor: "rgba(75,192,192,1)",
-            borderColor: "rgba(75,192,192,1)",
-
-            pointBorderColor: "rgba(75,192,192,1)",
-            pointBackgroundColor: "#fff",
-            pointBorderWidth: 1,
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: "rgba(75,192,192,1)",
-            pointHoverBorderColor: "rgba(255,255,255,1)",
-            pointHoverBorderWidth: 2,
-            pointRadius: 5,
-            pointHitRadius: 5,
-            data: [],
-         }
-      ]
+      datasets: datasets
    };
 
    var option = {
@@ -115,48 +168,78 @@ window.onload = function() {
       showLines: true
    };
    
-   var myLineChart = Chart.Line(canvas,{
+   myLineChart = Chart.Line(canvas,{
       data:data,
       options:option
    });
-   
-   setInterval(function(){
-      addData();
-   }, 1000);
-   
-   function addData(){
-      if(myLineChart.data.datasets[0].data.length == 10){
-         myLineChart.data.datasets[0].data.shift();
-         
-      }
-      if(myLineChart.data.datasets[1].data.length == 10){
-         myLineChart.data.datasets[1].data.shift();
-      }
-      if(myLineChart.data.labels.length == 10){
-         myLineChart.data.labels.shift();
-      }
-      myLineChart.data.datasets[0].data.push(getRandomInt(28,32));
-      myLineChart.data.datasets[1].data.push(getRandomInt(60,70));
-      myLineChart.data.labels.push(new Date().toLocaleString());
-      myLineChart.update();
+}  
+
+function syncPanel(thing){
+   var index = thing.Thing;
+   document.getElementById("StateSwitch"+index).checked = thing.State==1 ? true : false;
+   document.getElementById("AutoModeSwitch"+index).checked = thing.AutoMode==1 ? true : false;       
+   document.getElementById("AutoBy"+index).selectedIndex = thing.AutoBy;
+   document.getElementById("IfGreaterThan"+index).selectedIndex = thing.IfGreaterThan;
+   document.getElementById("SliderVal"+index).innerHTML = document.getElementById("Slider"+index).value = thing.Threshold;
+   document.getElementById("LastChange"+index).innerHTML = thing.LastChange.toLocaleString("en-US", {hour12 : false});
+   enableAutoPanel(index);
+}
+
+function syncPanels(){
+   for(var i = 0; i < numberofThings; i++){
+      if(States[i]!=null) syncPanel(States[i]);
    }
-   
 }
 
-function addData(chart, label, data) {
-    chart.data.labels.push(label);
-    chart.data.datasets.forEach((dataset) => {
-        dataset.data.push(data);
-    });
-    chart.update();
+function syncChart(){
+   if(Data.length>0){
+      for(var i = 0; i < dataLength; i++){
+         pushData2Chart(Data[i], myLineChart);
+      }
+   }
 }
 
-function getRandomInt(min, max) {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+function pushData2Array(data, array){
+   if(array.length == dataLength){
+      array.shift();
+   }
+   array.push(data);
 }
 
+function convertStateDateTime(state){
+   if(state!=null) state.LastChange = new Date(state.LastChange);
+}
 
+function convertAllStateDateTime(){
+   for(i = 0;i< numberofThings; i++){
+      convertStateDateTime(States[i]);
+   }
+}
 
+function convertDataDateTime(data){
+   if(data!=null) data.DateTime = new Date(data.DateTime);
+}
 
+function convertAllDataDateTime(){
+   for(var i = 0 ; i < dataLength; i++){
+      convertDataDateTime(Data[i]);
+   }
+}
+
+function pushData2Chart(data, chart) {    
+   if(data!=null){
+      if(chart.data.datasets[0].data.length == dataLength){
+         chart.data.datasets[0].data.shift();      
+      }
+      if(chart.data.datasets[1].data.length == dataLength){
+         chart.data.datasets[1].data.shift();
+      }
+      if(chart.data.labels.length == dataLength){
+         chart.data.labels.shift();
+      }
+      chart.data.datasets[0].data.push(data.Temperature);
+      chart.data.datasets[1].data.push(data.Humidity);
+      chart.data.labels.push(data.DateTime.toLocaleTimeString("en-US", {hour12 : false}));
+      chart.update();
+   }
+}
