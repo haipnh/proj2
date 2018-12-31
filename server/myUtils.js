@@ -37,7 +37,7 @@ module.exports = {
    },
    
    emit2Node(data, io){
-      module.exports.convertCmd2Node(data, io, function(obj2node){
+      module.exports.convertCmd2Node(data, function(obj2node){
          io.emit("ser2node", obj2node);
          console.log("ser2node : " + JSON.stringify(obj2node));
       });   

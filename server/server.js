@@ -80,7 +80,7 @@ function nodeHandler(jsonData){
    if(jsonData.Type.localeCompare("Greeting")==0){
       console.log("Connected node : " + jsonData.MacAddress);
       for(var i = 0; i < numberOfThings; i++){
-         if(States[i]!=null) myUtils.emit2Node(States[i], io);
+         myUtils.emit2Node(States[i], io);
       }
    }   
    if(jsonData.Type.localeCompare("Data")==0){
