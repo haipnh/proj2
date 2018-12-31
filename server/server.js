@@ -14,7 +14,7 @@ const dataLength = 24;
 const numberOfThings = 4;
 
 var dataCycleInSecond = 10;
-var dataCycleInMinute = 10;
+var dataCycleInMinute = 60;
 
 var States = []; 
 var Data = []; 
@@ -34,11 +34,6 @@ for(var i = 0; i < numberOfThings;i++){
 // Starting HTTP
 // Express HTTP-server that serves static files
 app.use(express.static(__dirname + "/sites"));
-
-// Serving specified request
-app.get("/dump", function(req, res){
-   res.sendFile(__dirname + "/sites/dump.html");
-});
 
 io.on("connection", function(socket){
    console.log("A client connected");
@@ -67,20 +62,13 @@ function webHandler(jsonData){
    var type = jsonData.Type;
    if(type !=null){
       if(type.localeCompare("Greeting")==0){ 
-         //console.log(Data);
          io.emit("ser2web", {"Type":"State", "Payload": States});
          io.emit("ser2web", {"Type":"Data", "Payload": Data});
-      }
-   
+      }   
       if(type.localeCompare("Command")==0){ 
-         var obj2node = {type:"cmd", thing: jsonData.Thing, state: jsonData.State, automode: jsonData.AutoMode, autoby: jsonData.AutoBy, ifgreaterthan: jsonData.IfGreaterThan, threshold: jsonData.Threshold};      
-         io.emit("ser2node", obj2node); // Chuyen tiep den node
-         console.log("ser2node : " + JSON.stringify(obj2node));        
-         jsonData.LastChange = new Date(); // Ghi nhan thoi gian      
-         //console.log(JSON.stringify(States));
-         //console.log(JSON.stringify(jsonData));
-         myUtils.pushThing2Array(jsonData, States); // Cap nhat vao mang Things      
-         // Cap nhat co so du lieu
+         myUtils.emit2Node(jsonData, io);  
+         jsonData.LastChange = new Date();      
+         myUtils.pushThing2Array(jsonData, States);     
          var sqlData = jsonData;            
          sqlData.LastChange = myUtils.convertToSqlDateTime(jsonData.LastChange);
          mySqlHelper.insertState(sqlData);   
@@ -91,6 +79,9 @@ function webHandler(jsonData){
 function nodeHandler(jsonData){
    if(jsonData.Type.localeCompare("Greeting")==0){
       console.log("Connected node : " + jsonData.MacAddress);
+      for(var i = 0; i < numberOfThings; i++){
+         if(States[i]!=null) myUtils.emit2Node(States[i], io);
+      }
    }   
    if(jsonData.Type.localeCompare("Data")==0){
       if(typeof jsonData.DateTime == "undefined")
@@ -122,12 +113,7 @@ function nodeHandler(jsonData){
    }
 }
 
-function clone(from, to, callback){
-   to = from.constructor();
-   for (var attr in from) {
-     if (from.hasOwnProperty(attr)) to[attr] = from[attr];
-   }
-   if(typeof callback == "function"){
-      callback();
-   }
+function emit2Node(obj2node){
+   io.emit("ser2node", obj2node);
+   console.log("ser2node : " + JSON.stringify(obj2node));
 }

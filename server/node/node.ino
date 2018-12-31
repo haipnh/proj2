@@ -20,7 +20,7 @@ SocketIOClient client;
 //char host[] = "34.219.71.32";  // AWS EC2 Instance's Public IP Address
 char host[] = "52.38.245.177";  // AWS EC2 Instance's Elastic IP Address
 //char host[] = "192.168.1.11";
-int port = 80;                 // Cổng dịch vụ socket server do chúng ta tạo!
+int port = 80;
 
 extern String RID;
 extern String Rfull;
@@ -91,12 +91,9 @@ void setup() {
   setupGPIO();
   mapPins();
   randomSeed(A0);
-//Serial.println("D1=" + String(D1) + "=" + String(Things[0].Pin)); 
-//Serial.println("D2=" + String(D2) + "=" + String(Things[1].Pin)); 
-//Serial.println("D5=" + String(D5) + "=" + String(Things[2].Pin)); 
-//Serial.println("D6=" + String(D6) + "=" + String(Things[3].Pin)); 
-//Serial.println("Setup done. Now wait 2 seconds for DHT11.");
-//delay(2000);  
+
+  Serial.println("Setup done. Now wait 2 seconds for DHT11.");
+  delay(2000);  
 }
 
 void loop() {
@@ -107,8 +104,8 @@ void loop() {
   uint32_t currentMillis = millis();
   
   ledTask(currentMillis);
-  //dataTask(currentMillis);
-  pseudoDataTask(currentMillis);
+  dataTask(currentMillis);
+  //pseudoDataTask(currentMillis);
    
   thingTask(currentMillis);
   
@@ -166,7 +163,7 @@ void dataTask(uint32_t currentMillis){
       SensorData.Humi = h;
       if(client.connected()){
         client.sendJSON("node2ser", makeJsonData(t, h));
-        if(DEBUG) Serial.println("Sent : " + String(t) + "#" +String(h));
+        if(DEBUG) Serial.println("DHT Sent : " + String(t) + "#" +String(h));
       }
     }      
   }
@@ -177,7 +174,7 @@ void pseudoDataTask(uint32_t currentMillis){
   if(elapsedTime > pseudoDataInterval) {
     pseudoDataPreviousMillis = currentMillis;
     uint8_t t = random(29,31);
-    uint8_t h = random(78,82);
+    uint8_t h = random(75,85);
     SensorData.Temp = t;
     SensorData.Humi = h;
     if(client.connected()){

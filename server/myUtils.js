@@ -28,6 +28,21 @@ module.exports = {
       return parseInt((toDateTime-fromDateTime)/(1000));   
    },
    
+   convertCmd2Node(src, callback){
+      var obj2Node =  {type:"cmd", thing: src.Thing, state: src.State, 
+                  automode: src.AutoMode, autoby: src.AutoBy, 
+                  ifgreaterthan: src.IfGreaterThan, threshold: src.Threshold};
+      if(typeof callback == "function")
+         callback(obj2Node);
+   },
+   
+   emit2Node(data, io){
+      module.exports.convertCmd2Node(data, io, function(obj2node){
+         io.emit("ser2node", obj2node);
+         console.log("ser2node : " + JSON.stringify(obj2node));
+      });   
+   },
+   
    pushData2Array: function(data, datas, length, callback){
       if(datas.length == length){
          datas.shift();
