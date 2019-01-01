@@ -3,7 +3,7 @@ var socket = io();
 /* Variables */
 var numberofThings = 4;
 var States = [];
-var dataLength = 24;
+var dataLength = 24*3;
 var newData, Data = [];
 var canvas = document.getElementById("canvas");
 var myLineChart;

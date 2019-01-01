@@ -10,7 +10,7 @@ var myUtils = require("./myUtils.js");
 // Attaching SQL
 mySqlHelper.mySqlInit();
 
-const dataLength = 24;
+const dataLength = 24*3;
 const numberOfThings = 4;
 
 var dataCycleInSecond = 10;
