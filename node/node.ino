@@ -189,51 +189,53 @@ void thingTask(uint32_t currentMillis){
    if(elapsedTime > thingInterval) {
       thingPreviousMillis = currentMillis;
       //if((thing!=-1)&&(Things[thing].AutoMode==0)){     
-       if(thing!=-1){
+      if(thing!=-1){
          controlThing(thing);
          thing=-1;
       }
     
       for(uint8_t i = 0; i<4; i++){
-         if(Things[i].AutoMode==1 && Things[i].AutoBy==0){
-            if(Things[i].IfGreaterThan==0){
-               if(SensorData.Temp < Things[i].Threshold){
-                  Things[i].State=1;
-                  controlThing(i);      
-               }
-               else{
-                  Things[i].State=0;
-                  controlThing(i);
-               }
-            }else{
-               if(SensorData.Temp > Things[i].Threshold){
-                  Things[i].State=1;
-                  controlThing(i);      
-               }
-               else{
-                  Things[i].State=0;
-                  controlThing(i);
-               }
-            }
-         } else if (Things[i].AutoMode==1 && Things[i].AutoBy==1){
-            if(Things[i].IfGreaterThan==0){
-               if(SensorData.Humi < Things[i].Threshold){
-                  Things[i].State=1;
-                  controlThing(i);      
-               } else{
-                  Things[i].State=0;
-                  controlThing(i);
-               }
-            }else{
-               if(SensorData.Humi > Things[i].Threshold){
-                  Things[i].State=1;
-                  controlThing(i);      
+         if(Things[i].State==1){
+            if(Things[i].AutoMode==1 && Things[i].AutoBy==0){
+               if(Things[i].IfGreaterThan==0){
+                  if(SensorData.Temp < Things[i].Threshold){
+                     Things[i].State=1;
+                     controlThing(i);      
+                  }
+                  else{
+                     Things[i].State=0;
+                     controlThing(i);
+                  }
                }else{
-                  Things[i].State=0;
-                  controlThing(i);
+                  if(SensorData.Temp > Things[i].Threshold){
+                     Things[i].State=1;
+                     controlThing(i);      
+                  }
+                  else{
+                     Things[i].State=0;
+                     controlThing(i);
+                  }
                }
-            }
-         }       
+            } else if (Things[i].AutoMode==1 && Things[i].AutoBy==1){
+               if(Things[i].IfGreaterThan==0){
+                  if(SensorData.Humi < Things[i].Threshold){
+                     Things[i].State=1;
+                     controlThing(i);      
+                  } else{
+                     Things[i].State=0;
+                     controlThing(i);
+                  }
+               }else{
+                  if(SensorData.Humi > Things[i].Threshold){
+                     Things[i].State=1;
+                     controlThing(i);      
+                  }else{
+                     Things[i].State=0;
+                     controlThing(i);
+                  }
+               }
+            }       
+         }
       }
    }
 }

@@ -1,4 +1,5 @@
 var socket = io();
+
 /* Variables */
 var numberofThings = 4;
 var States = [];
@@ -8,7 +9,7 @@ var canvas = document.getElementById("canvas");
 var myLineChart;
 var datasets = [
    {
-      label: "Temparature",
+      label: "Temparature (ºC)",
       fontColor: "#fff",
       fill: false,
       lineTension: 0,
@@ -27,7 +28,7 @@ var datasets = [
       data: [],
    },
    {
-      label: "Humidity",
+      label: "Humidity (%)",
       fill: false,
       lineTension: 0,
       backgroundColor: "rgba(75,192,192,1)",
@@ -46,17 +47,40 @@ var datasets = [
    }
 ]
 
+function initChart(){
+   var data = {
+      labels: [],
+      datasets: datasets
+   };
+
+   var option = {
+      legend: {
+            display: true,
+            labels: {
+                fontColor: '#000'
+            }
+        },      
+      showLines: true
+   };
+   
+   myLineChart = Chart.Line(canvas,{
+      data:data,
+      options:option
+   });
+} 
+
 /* Windows on load event*/
 window.onload = function() {
    socket.emit("web2ser", {"Type":"Greeting"});   
    
    for(var i=0; i<numberofThings; i++){
       syncSliderValue(i);
-      enableAutoPanel(i);
+      setEnableAutoPanel(i);
    }
    
    initChart();   
 }
+
 /* Event-Driven Functions */
 socket.on("ser2web", function(msg){
    console.log(msg.Payload);
@@ -80,13 +104,15 @@ socket.on("ser2web", function(msg){
 });
 
 function StateSwitchOnChange(item){
+   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
+   setEnableAutoModeAndPanel(index);
    sendCmd(item);
 }
 
 function AutoModeSwitchOnChange(item){
    sendCmd(item);
    var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string
-   enableAutoPanel(index);
+   setEnableAutoPanel(index);
 }
 
 function AutoByOnChange(item){
@@ -131,7 +157,7 @@ function makeCmd(index){
 }
 
 function sendCmd(item){
-   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string 
+   var index = item.id.replace( /^\D+/g, ''); // Extracting number only from string   
    var cmd = makeCmd(index);
    socket.emit("web2ser", cmd);
    console.log("Sent : " + JSON.stringify(cmd));
@@ -142,37 +168,19 @@ function syncSliderValue(index){
    document.getElementById("SliderVal"+index).innerHTML = sliderVal;
 }
 
-function enableAutoPanel(index){
-   var enable = document.getElementById("AutoModeSwitch"+index).checked;
-   var state = document.getElementById("StateSwitch"+index);
+function setEnableAutoModeAndPanel(index){
+   document.getElementById("AutoModeSwitch"+index).disabled = !document.getElementById("StateSwitch"+index).checked;
+   setEnableAutoPanel(index);
+}
+
+function setEnableAutoPanel(index){
+   var state = document.getElementById("StateSwitch"+index).checked;
+   var autoMode = document.getElementById("AutoModeSwitch"+index).checked;
    var combobox1 = document.getElementById("AutoBy"+index);
    var combobox2 = document.getElementById("IfGreaterThan"+index);
    var slider = document.getElementById("Slider"+index);
-   state.disabled = enable;
-   combobox1.disabled = combobox2.disabled = slider.disabled = !enable;
-}
-
-function initChart(){
-   var data = {
-      labels: [],
-      datasets: datasets
-   };
-
-   var option = {
-      legend: {
-            display: true,
-            labels: {
-                fontColor: '#000'
-            }
-        },      
-      showLines: true
-   };
-   
-   myLineChart = Chart.Line(canvas,{
-      data:data,
-      options:option
-   });
-}  
+   combobox1.disabled = combobox2.disabled = slider.disabled = !(state&&autoMode);
+} 
 
 function syncPanel(thing){
    var index = thing.Thing;
@@ -182,7 +190,7 @@ function syncPanel(thing){
    document.getElementById("IfGreaterThan"+index).selectedIndex = thing.IfGreaterThan;
    document.getElementById("SliderVal"+index).innerHTML = document.getElementById("Slider"+index).value = thing.Threshold;
    document.getElementById("LastChange"+index).innerHTML = thing.LastChange.toLocaleString("en-US", {hour12 : false});
-   enableAutoPanel(index);
+   setEnableAutoPanel(index);
 }
 
 function syncPanels(){
@@ -216,8 +224,14 @@ function convertAllStateDateTime(){
    }
 }
 
-function convertDataDateTime(data){
-   if(data!=null) data.DateTime = new Date(data.DateTime);
+function convertDataDateTime(data){   
+   if(data!=null) {
+      //var offset = new Date().getTimezoneOffset();
+      //console.log("Offset : " + offset);
+      //console.log("Before : " + data.DateTime);
+      data.DateTime = new Date(data.DateTime);
+      //console.log("After : " + data.DateTime);
+   }
 }
 
 function convertAllDataDateTime(){
