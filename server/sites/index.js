@@ -253,7 +253,7 @@ function pushData2Chart(data, chart) {
       }
       chart.data.datasets[0].data.push(data.Temperature);
       chart.data.datasets[1].data.push(data.Humidity);
-      chart.data.labels.push(data.DateTime.toLocaleTimeString("en-US", {hour12 : false, timeZone : "Asia/Vietnam"}));
+      chart.data.labels.push(data.DateTime.toLocaleTimeString("en-US", {hour12 : false, timeZone : "Asia/Bangkok"}));
       chart.update();
    }
 }
