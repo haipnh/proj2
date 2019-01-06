@@ -189,7 +189,7 @@ function syncPanel(thing){
    document.getElementById("AutoBy"+index).selectedIndex = thing.AutoBy;
    document.getElementById("IfGreaterThan"+index).selectedIndex = thing.IfGreaterThan;
    document.getElementById("SliderVal"+index).innerHTML = document.getElementById("Slider"+index).value = thing.Threshold;
-   document.getElementById("LastChange"+index).innerHTML = thing.LastChange.toLocaleString("en-US", {hour12 : false});
+   document.getElementById("LastChange"+index).innerHTML = thing.LastChange.toLocaleString("en-US", {hour12 : false, timeZone : "Asia/Bangkok"});
    setEnableAutoPanel(index);
 }
 
